@@ -1,5 +1,8 @@
 package com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.ui.theme.screen
-
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,16 +27,26 @@ fun DetailScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Detail", style = MaterialTheme.typography.headlineMedium)
+
         when {
-            uiState.errorMessage != null ->
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            uiState.errorMessage != null -> {
                 Text(uiState.errorMessage)
+            }
 
             uiState.student != null -> {
-                val student = uiState.student
-                Text("ID: ${student.id}")
-                Text("Nama: ${student.name}")
-                Text("Program: ${student.program}")
-                Text("Angkatan: ${student.year}")
+                val data = uiState.student
+                Text(data.name, style = MaterialTheme.typography.headlineSmall)
+                Text("Email: ${data.email}")
+                Text("University: ${data.university}")
             }
         }
 

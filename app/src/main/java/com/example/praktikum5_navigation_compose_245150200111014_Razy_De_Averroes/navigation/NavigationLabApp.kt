@@ -10,8 +10,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.Routes
+import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.data.remote.RetrofitClient
+import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.data.remote.StudentRemoteDataSource
 import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.data.repository.DefaultStudentRepository
-import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.data.source.StudentLocalDataSource
+//import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.data.source.StudentLocalDataSource
 import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.ui.detail.DetailUiState.DetailViewModel
 import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.ui.home.HomeViewModel
 import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.ui.theme.screen.AboutScreen
@@ -19,10 +21,16 @@ import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroe
 import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.ui.theme.screen.HomeScreen
 import com.example.praktikum5_navigation_compose_245150200111014_Razy_De_Averroes.ui.theme.screen.ProfileScreen
 
+
+
 @Composable
 fun NavigationLabApp() {
-    val dataSource = remember { StudentLocalDataSource() }
-    val repository = remember { DefaultStudentRepository(dataSource) }
+    val remoteDataSource = remember {
+        StudentRemoteDataSource(RetrofitClient.apiService)
+    }
+    val repository = remember {
+        DefaultStudentRepository(remoteDataSource)
+    }
     val navController = rememberNavController()
 
     NavHost(
@@ -30,29 +38,20 @@ fun NavigationLabApp() {
         startDestination = Routes.HOME
     ) {
         composable(Routes.HOME) {
-            val homeViewModel: HomeViewModel = viewModel(
-                factory = HomeViewModel.factory(repository)
-            )
+            val homeViewModel = remember { HomeViewModel(repository) }
 
             HomeScreen(
                 uiState = homeViewModel.uiState,
-                onOpenDetail = { id ->
-                    navController.navigate(Routes.detail(id))
-                },
-                onOpenProfile = {
-                    navController.navigate(Routes.PROFILE)
-                },
-                onOpenAbout = {
-                    navController.navigate(Routes.ABOUT)
-                }
+                onQueryChange = homeViewModel::onQueryChange,
+                onSearch = homeViewModel::search,
+                onStudentClick = { id -> navController.navigate(Routes.detail(id)) },
+                onRetry = homeViewModel::search
             )
         }
 
         composable(
             route = Routes.DETAIL,
-            arguments = listOf(
-                navArgument("studentId") { type = NavType.IntType }
-            )
+            arguments = listOf(navArgument("studentId") { type = NavType.IntType })
         ) { backStackEntry ->
             val studentId = backStackEntry.arguments?.getInt("studentId") ?: -1
 
@@ -70,16 +69,7 @@ fun NavigationLabApp() {
             )
         }
 
-        composable(Routes.PROFILE) {
-            ProfileScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Routes.ABOUT) {
-            AboutScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
+        composable(Routes.PROFILE) { ProfileScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.ABOUT) { AboutScreen(onBack = { navController.popBackStack() }) }
     }
 }

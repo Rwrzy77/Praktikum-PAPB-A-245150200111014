@@ -14,26 +14,48 @@ class HomeViewModel(
     var uiState by mutableStateOf(HomeUiState())
         private set
 
-    init {
-        loadStudents()
+    init { loadStudents() }
+
+    fun onQueryChange(query: String) {
+        uiState = uiState.copy(searchQuery = query)
     }
 
     fun loadStudents() {
-        val students = repository.getStudents()
-        uiState = if (students.isNotEmpty()) {
-            HomeUiState(students = students)
-        } else {
-            HomeUiState(errorMessage = "Belum ada data mahasiswa")
+        uiState = uiState.copy(isLoading = true, errorMessage = null)
+        repository.getStudents { result ->
+            result
+                .onSuccess { data ->
+                    uiState = uiState.copy(students = data, isLoading = false)
+                }
+                .onFailure { error ->
+                    uiState = uiState.copy(
+                        students = emptyList(),
+                        isLoading = false,
+                        errorMessage = error.message ?: "Gagal mengambil data"
+                    )
+                }
         }
     }
 
-    companion object {
-        fun factory(repository: StudentRepository): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return HomeViewModel(repository) as T
+    fun search() {
+        val query = uiState.searchQuery.trim()
+        if (query.isEmpty()) {
+            loadStudents()
+            return
+        }
+        uiState = uiState.copy(isLoading = true, errorMessage = null)
+        repository.searchStudents(query) { result ->
+            result
+                .onSuccess { data ->
+                    uiState = uiState.copy(students = data, isLoading = false)
                 }
-            }
+                .onFailure { error ->
+                    uiState = uiState.copy(
+                        students = emptyList(),
+                        isLoading = false,
+                        errorMessage = error.message ?: "Gagal mencari data"
+                    )
+                }
+        }
     }
 }
